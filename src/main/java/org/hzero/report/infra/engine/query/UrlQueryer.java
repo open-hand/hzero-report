@@ -155,14 +155,14 @@ public class UrlQueryer implements Query {
         // 分页信息
         SqlPageInfo pageInfo = this.parameter.getSqlPageInfo();
         String url = parameter.getSqlText();
-        if (pageInfo.getPage() == 0 && pageInfo.getSize() == 0) {
-            // 报表不分页，设置默认分页
-            return url;
-        }
+        return prePageUrl(url, pageInfo.getPage(), pageInfo.getSize());
+    }
+
+    private String prePageUrl(String url, int page, int size) {
         if (url.contains(BaseConstants.Symbol.QUESTION)) {
-            return url + "&page=" + pageInfo.getPage() + "&size=" + pageInfo.getSize();
+            return url + "&page=" + page + "&size=" + size;
         } else {
-            return url + "?page=" + pageInfo.getPage() + "&size=" + pageInfo.getSize();
+            return url + "?page=" + page + "&size=" + size;
         }
     }
 
@@ -190,7 +190,8 @@ public class UrlQueryer implements Query {
         } catch (Exception e) {
             try {
                 // list数据
-                List<JSONObject> list = ApplicationContextHelper.getContext().getBean(ObjectMapper.class).readValue(data, new TypeReference<List<JSONObject>>() {});
+                List<JSONObject> list = ApplicationContextHelper.getContext().getBean(ObjectMapper.class).readValue(data, new TypeReference<List<JSONObject>>() {
+                });
                 Map<String, Object> map = new HashMap<>(16);
                 map.put(HrptConstants.DataXmlAttr.DEFAULT_ROW, list);
                 result = JSON.toJSONString(map);
@@ -281,14 +282,24 @@ public class UrlQueryer implements Query {
      */
     @Override
     public long getMetaDataCount(String url) {
-        logger.debug(url);
+        // 获取数据总数，分页设置为0， 10
+        String pageUrl = prePageUrl(url, 0, 10);
+        ResponseEntity<String> responseEntity = getResult(pageUrl);
+        String data = ResponseUtils.getResponse(responseEntity, String.class);
         try {
-            String data = ResponseUtils.getResponse(getResult(url), String.class);
             Page<JSONObject> page = ApplicationContextHelper.getContext().getBean(ObjectMapper.class).readValue(data, new TypeReference<Page<JSONObject>>() {
             });
             return page.getTotalElements();
         } catch (Exception e) {
-            throw new CommonException(HrptMessageConstants.ERROR_REPORT_GENERATE, e);
+            try {
+                // list数据
+                List<JSONObject> list = ApplicationContextHelper.getContext().getBean(ObjectMapper.class).readValue(data, new TypeReference<List<JSONObject>>() {
+                });
+                return list.size();
+            } catch (Exception ex) {
+                // 单个对象数据
+                return 1;
+            }
         }
     }
 }

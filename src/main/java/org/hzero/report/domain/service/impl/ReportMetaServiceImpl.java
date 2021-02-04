@@ -286,11 +286,6 @@ public class ReportMetaServiceImpl implements IReportMetaService {
         }
         // 获取执行SQL
         String executeSql = getExecuteSqlText(sqlText, formParams);
-        // 获取sql类型
-        String sqlType = Dataset.checkSqlType(sqlText);
-        if (Objects.equals(sqlType, HrptConstants.DataSetType.TYPE_A)) {
-            return false;
-        }
         // 获取总条数
         Long cnt = getMetaDataCount(tenantId, datasourceCode, executeSql);
         // 与报表异步阈值进行判断，如为空则使用默认值

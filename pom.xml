@@ -52,7 +52,7 @@
 			<groupId>org.hzero.starter</groupId>
 			<artifactId>hzero-starter-report-core</artifactId>
 		</dependency>
-		<dependency>
+        <dependency>
             <groupId>org.hzero.starter</groupId>
             <artifactId>hzero-starter-keyencrypt</artifactId>
         </dependency>

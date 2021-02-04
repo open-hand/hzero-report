@@ -476,8 +476,10 @@ public class ReportGenerateServiceImpl implements IReportGenerateService {
         try {
             String requestMessage = StringUtils.EMPTY;
             String requestStatus = HrptConstants.RequestStatus.STATUS_F;
-            // 强制分页处理
-            report.setPageFlag(BaseConstants.Flag.YES);
+            // 除了API类型，强制分页处理
+            if (HrptConstants.DataSetType.TYPE_A.equals(report.getReportTypeCode())) {
+                report.setPageFlag(BaseConstants.Flag.YES);
+            }
             // 设置每页数据量
             formParams.put(HrptConstants.FixedParam.SIZE, reportConfig.getRequest().getPageSize());
             formParams.put(HrptConstants.FixedParam.PAGE, 0);
@@ -535,42 +537,51 @@ public class ReportGenerateServiceImpl implements IReportGenerateService {
             nameList.add(column.getName());
         }
         int page = 0;
-        // 报表行数据
-        List<MetaDataRow> list;
         int line = 1;
-        do {
-            // 设置分页属性
-            formParams.put(HrptConstants.FixedParam.PAGE, page);
-            if (page == 0) {
-                list = perData;
-            } else {
-                list = generateTableRows(report, formParams);
-            }
-            if (CollectionUtils.isEmpty(list)) {
-                break;
-            }
-            page++;
-            // 表数据
-            for (MetaDataRow metaDataRow : list) {
-                SXSSFRow row = sheet.createRow(line);
-                line++;
-                Map<String, MetaDataCell> dataMap = metaDataRow.getCells();
-                int rowIndex = 0;
-                for (String name : nameList) {
-                    if (dataMap.containsKey(name)) {
-                        Object value = dataMap.get(name).getValue();
-                        row.createCell(rowIndex).setCellValue(value == null ? StringUtils.EMPTY : String.valueOf(value));
-                    } else {
-                        row.createCell(rowIndex).setCellValue(StringUtils.EMPTY);
-                    }
-                    rowIndex++;
+        // 未开启分页标识的数据只请求一次
+        if (BaseConstants.Flag.YES.equals(report.getPageFlag())) {
+            // 报表行数据
+            List<MetaDataRow> list;
+            do {
+                // 设置分页属性
+                formParams.put(HrptConstants.FixedParam.PAGE, page);
+                if (page == 0) {
+                    list = perData;
+                } else {
+                    list = generateTableRows(report, formParams);
                 }
-            }
-        } while (CollectionUtils.isNotEmpty(list));
+                if (CollectionUtils.isEmpty(list)) {
+                    break;
+                }
+                page++;
+                // 表数据
+                addData(list, sheet, line, nameList);
+            } while (CollectionUtils.isNotEmpty(list));
+        } else {
+            addData(perData, sheet, line, nameList);
+        }
         workbook.write(out);
         // 上传文件
         return fileClient.uploadFile(tenantId, HZeroService.Report.BUCKET_NAME,
                 HrptConstants.REPORT_DIR, report.getReportName() + ".xlsx", FileType.Application.XLS, out.toByteArray());
+    }
+
+    private void addData(List<MetaDataRow> list, SXSSFSheet sheet, int line, List<String> nameList) {
+        for (MetaDataRow metaDataRow : list) {
+            SXSSFRow row = sheet.createRow(line);
+            line++;
+            Map<String, MetaDataCell> dataMap = metaDataRow.getCells();
+            int rowIndex = 0;
+            for (String name : nameList) {
+                if (dataMap.containsKey(name)) {
+                    Object value = dataMap.get(name).getValue();
+                    row.createCell(rowIndex).setCellValue(value == null ? StringUtils.EMPTY : String.valueOf(value));
+                } else {
+                    row.createCell(rowIndex).setCellValue(StringUtils.EMPTY);
+                }
+                rowIndex++;
+            }
+        }
     }
 
     /**
