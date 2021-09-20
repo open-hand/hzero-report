@@ -61,7 +61,7 @@ public interface LabelPrintService {
     /**
      * 获取标签明细
      *
-     * @param labelTemplateCode 模板便阿门
+     * @param labelTemplateCode 模板编码
      * @param buildInParams     标签参数
      * @return 标签明细
      */
@@ -71,7 +71,7 @@ public interface LabelPrintService {
      * 获取标签明细
      *
      * @param tenantId          租户ID
-     * @param labelTemplateCode 模板便阿门
+     * @param labelTemplateCode 模板编码
      * @param buildInParams     标签参数
      * @return 标签明细
      */
